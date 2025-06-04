@@ -449,8 +449,9 @@ def exportar():
         flash(f"Error al exportar: {str(e)}", "danger")
         return redirect('/formulario')
 
-
 if __name__ == '__main__':
     crear_base_datos()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
+
+    #app.run(host="0.0.0.0", port=5000, debug=True)
 
