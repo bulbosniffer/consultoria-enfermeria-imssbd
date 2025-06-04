@@ -8,7 +8,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_segura'
-
+os.makedirs(os.path.join(os.path.dirname(__file__), 'tmp'), exist_ok=True)
 DB_NAME = os.path.join(os.path.dirname(__file__), 'tmp', 'salud_adulto.db')
 
 # Crear base de datos si no existe
