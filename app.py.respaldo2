@@ -1,0 +1,177 @@
+from flask import Flask, render_template, request, redirect, send_file, url_for, flash
+from datetime import datetime
+import sqlite3
+import pandas as pd
+import io
+
+app = Flask(__name__)
+app.secret_key = 'clave_secreta_para_validacion'
+
+# Crear la base de datos si no existe
+conn = sqlite3.connect('salud_adulto.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS registro_adultos_mayores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    unidad_salud TEXT,
+    entidad_federativa TEXT,
+    clues TEXT,
+    localidad TEXT,
+    servicio TEXT,
+    personal_enfermeria TEXT,
+    fecha TEXT,
+    hora_inicio TEXT,
+    hora_termino TEXT,
+    paciente TEXT,
+    edad INTEGER,
+    sexo TEXT,
+    indigena TEXT,
+    migrante TEXT,
+    grupo_edad TEXT,
+    nivel_atencion TEXT,
+    consulta_enfermeria TEXT,
+    plan_cuidados TEXT,
+    diabetes TEXT,
+    hipertension TEXT,
+    vacunacion TEXT,
+    observaciones TEXT,
+    nombre_jefe_fam TEXT,
+    fecha_nacimiento TEXT,
+    domicilio TEXT,
+    consultoria_otorgada TEXT,
+    prescripcion_medicamentos TEXT,
+    diagnostico_nutricional TEXT,
+    grupo_riesgo TEXT
+)''')
+conn.commit()
+conn.close()
+
+# Plantilla HTML modernizada con Bootstrap y campos agrupados
+
+
+# Función para validar campos vacíos
+from datetime import datetime
+
+def campos_validos(form):
+    for campo in form:
+        if form[campo].strip() == '':
+            return False, campo
+
+    try:
+        edad = int(form['edad'])
+        if edad <= 0:
+            return False, 'edad'
+    except ValueError:
+        return False, 'edad'
+
+    try:
+        fecha = datetime.strptime(form['fecha'], '%Y-%m-%d')
+        if fecha > datetime.now():
+            return False, 'fecha'
+    except ValueError:
+        return False, 'fecha'
+
+    try:
+        hora_inicio = datetime.strptime(form['hora_inicio'], '%H:%M')
+        hora_termino = datetime.strptime(form['hora_termino'], '%H:%M')
+        if hora_inicio >= hora_termino:
+            return False, 'hora_inicio'
+    except ValueError:
+        return False, 'hora_inicio'
+
+    return True, None
+
+
+@app.route('/', methods=['GET', 'POST'])
+def formulario():
+    if request.method == 'POST':
+        validado, campo_faltante = campos_validos(request.form)
+        if not validado:
+            flash(f'Por favor completa el campo: {campo_faltante.replace("_", " ").capitalize()}', 'danger')
+            return redirect('/')
+
+        try:
+            data = (
+                request.form['unidad_salud'],
+                request.form['entidad_federativa'],
+                request.form['clues'],
+                request.form['localidad'],
+                request.form['servicio'],
+                request.form['personal_enfermeria'],
+                request.form['fecha'],
+                request.form['hora_inicio'],
+                request.form['hora_termino'],
+                request.form['paciente'],
+                int(request.form['edad']),
+                request.form['sexo'],
+                request.form['indigena'],
+                request.form['migrante'],
+                request.form['grupo_edad'],
+                request.form['nivel_atencion'],
+                request.form['consulta_enfermeria'],
+                request.form['plan_cuidados'],
+                request.form['diabetes'],
+                request.form['hipertension'],
+                request.form['vacunacion'],
+                request.form['observaciones'],
+                request.form['nombre_jefe_fam'],
+                request.form['fecha_nacimiento'],
+                request.form['domicilio'],
+                request.form['consultoria_otorgada'],
+                request.form['prescripcion_medicamentos'],
+                request.form['diagnostico_nutricional'],
+                request.form['grupo_riesgo']
+            )
+
+            conn = sqlite3.connect('salud_adulto.db')
+            c = conn.cursor()
+            c.execute('''INSERT INTO registro_adultos_mayores (
+                unidad_salud, entidad_federativa, clues, localidad, servicio,
+                personal_enfermeria, fecha, hora_inicio, hora_termino, paciente,
+                edad, sexo, indigena, migrante, grupo_edad,
+                nivel_atencion, consulta_enfermeria, plan_cuidados,
+                diabetes, hipertension, vacunacion, observaciones,
+                nombre_jefe_fam, fecha_nacimiento, domicilio,
+                consultoria_otorgada, prescripcion_medicamentos,
+                diagnostico_nutricional, grupo_riesgo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
+            conn.commit()
+            conn.close()
+            flash('Registro guardado exitosamente.', 'success')
+        except Exception as e:
+            flash(f'Error al guardar: {e}', 'danger')
+        return redirect('/')
+
+    conn = sqlite3.connect('salud_adulto.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM registro_adultos_mayores')
+    registros = c.fetchall()
+    conn.close()
+
+    return render_template('formulario.html', registros=registros)
+
+@app.route('/eliminar/<int:registro_id>', methods=['POST'])
+def eliminar(registro_id):
+    conn = sqlite3.connect('salud_adulto.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM registro_adultos_mayores WHERE id = ?', (registro_id,))
+    conn.commit()
+    conn.close()
+    flash('Registro eliminado.', 'info')
+    return redirect('/')
+
+@app.route('/exportar')
+def exportar():
+    conn = sqlite3.connect('salud_adulto.db')
+    df = pd.read_sql_query('SELECT * FROM registro_adultos_mayores', conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Registros', index=False)
+    output.seek(0)
+
+    return send_file(output, download_name="registros_salud_adulto.xlsx", as_attachment=True)
+
+if __name__ == '__main__':
+     app.run(host="0.0.0.0", port=5000, debug=True)
+    #app.run(debug=True)

@@ -1,0 +1,448 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>Captura Salud del Adulto</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body class="container mt-4">
+  <!-- Mensajes flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+    <h2 class="mb-4">Hola, {{ session['usuario'] }}!</h2>
+    <p>Bienvenido al panel de usuario.</p>
+    <a href="{{ url_for('logout') }}">Cerrar sesión</a>		
+    <h2 class="mb-4">Hoja de Consultoria de Enfermeria</h2>
+    <form method="POST" class="row g-3">
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Datos de la Unidad</legend>
+            <div class="row g-3">
+            <div class="col-md-6">
+                <label>Unidad de Salud</label><input class="form-control"  readonly name="unidad_salud" value="CESSA BELISARIO DOMINGUEZ">
+            </div>
+            <div class="col-md-6">
+                <label>Entidad Federativa</label><input class="form-control" readonly name="entidad_federativa" value="CHIAPAS">
+            </div>
+            <div class="col-md-4">
+                <label>CLUES</label><input class="form-control"  readonly name="clues" value="CSIMB005343">
+            </div>
+            <div class="col-md-4">
+                <label>Localidad</label><input class="form-control"  readonly name="localidad" value="BELISARIO DOMINGUEZ">
+            </div>
+            <div class="col-md-6">
+                <label>Personal de Enfermería</label><input class="form-control" readonly name="personal_enfermeria" value="{{ session['usuario'] }}">
+            </div>
+            <div class="col-md-4">
+                <label>Servicio</label><select class="form-select" name="servicio">
+                    <option >Consulta Externa</option>
+                    <option >Urgencia</option></select>
+                
+            </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Datos del Paciente</legend>
+             <div class="row g-3">
+            <div class="col-md-6">
+                <label>Nombre del Paciente</label><input class="form-control" name="paciente">
+            </div>
+            <div class="col-md-6">
+                <label>Nombre del Jefe de Familia</label><input class="form-control" name="nombre_jefe_fam">
+            </div>
+            <div class="col-md-4">
+                <label>Fecha de Nacimiento</label><input class="form-control" type="date" name="fecha_nacimiento" id="fecha_nacimiento">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Edad:</label>
+                <input class="form-control" type="text" id="edad" readonly>
+            </div>
+            <script>
+                document.getElementById("fecha_nacimiento").addEventListener("change", function() {
+                const fechaNacimiento = new Date(this.value);
+                const hoy = new Date();
+                let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+                const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+
+            // Si aún no ha cumplido años este año
+                if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+                    edad--;
+                }
+
+                document.getElementById("edad").value = isNaN(edad) ? "" : edad ;
+                });
+            </script>
+            <div class="col-md-8">
+                <label>Domicilio</label><input class="form-control" name="domicilio">
+            </div>
+            <div class="col-md-3">
+                <label>Sexo</label>
+                <select class="form-select" name="sexo">
+                    <option value="F">Femenino</option><option value="M">Masculino</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>Peso</label>
+                <select class="form-select" name="sexo">
+                    <option value="F">Femenino</option><option value="M">Masculino</option>
+                </select>
+            </div> 
+            </div>          
+        </fieldset>
+
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Atención y Diagnóstico</legend>
+            <div class="row g-3">
+            <div class="col-md-6">
+                <label for="fecha" class="form-label">Fecha</label>
+                <input class="form-control" type="date" id="fecha" name="fecha">
+            </div>
+            <div class="col-md-6">
+                <label for="hora_inicio" class="form-label">Hora Inicio</label>
+                <input class="form-control" type="time" id="hora_inicio" name="hora_inicio">
+            </div>
+            <div class="col-md-6">
+                <label for="hora_termino" class="form-label">Hora Término</label>
+                <input class="form-control" type="time" id="hora_termino" name="hora_termino">
+            </div>
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Datos Generales</legend>
+             <div class="row g-3">
+            <div class="col-md-3">
+                <label>¿Indígena?</label><select class="form-select" name="indigena">
+                    <option value="2">No</option>
+                    <option  value="1">Sí</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>¿Migrante?</label><select class="form-select" name="migrante">
+                    <option value="2">No</option>
+                    <option value="1">Sí</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label>Nivel de Atención</label><select class="form-select" name="nivel_atencion">
+                    <option value="1">Primer nivel de Atencion</option>
+                    <option value="2">Segundo nivel de Atencion</option>
+                    <option value="3">Tercer nivel de Atencion</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label>Consulta de Enfermería Otorgada</label>
+                <select class="form-select" name="consulta_enfermeria">
+                    <option value="1">Primera vez</option>
+                    <option value="2">Subsecuente</option>
+                    </select>            
+            </div>
+            
+            <div class="col-md-6">
+                <label>Consultoría Otorgada</label>
+                <select class="form-select" name="consultoria_otorgada">
+                    <option value="1">Dentro de la Unidad</option>
+                    <option value="2">Fuera de la Unidad</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label>Prescripción de Medicamentos</label>
+                <select class="form-select" name="prescripcion_medicamentos">
+                    <option value="1">Se otorgó medicamento</option>
+                    <option value="2">Caso Contrario</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label>Grupo de Edad</label><select class="form-select" name="grupo_edad">
+                    <option value="1">0 - 9 años</option>
+                    <option value="2">10 a 19 años</option>
+                    <option value="3">20 a 59 años</option>
+                    <option value="4">60 años y más</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Institución De Procedencia</label>
+                 <select class="form-select" name="INSTITUCION_PROCEDENCIA">
+                    <option value="1">Servicio De salud Bienestar</option>
+                    <option value="2">Imss </option>
+                    <option value="3">Issste</option>
+                    <option value="4">Programa imss bienestar</option>
+                    <option value="5">Otras</option>
+                </select> 
+            </div> 
+            <div class="col-md-4">
+                <label>Consejería De Planificación familias</label>
+                 <select class="form-select" name="CONSEJERIA_PF">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                    
+                </select> 
+            </div>
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Planificación familiar</legend>
+            <legend class="w-auto px-1">(PRIMER NIVEL)</legend>
+            <div class="col-md-4">
+                <label>Grupos De Edad En Años</label>
+                 <select class="form-select" name="PF_GRUPOS_EDAD">
+                    <option value="1">Menor a 20</option>
+                    <option value="2">20 años y más</option>
+                    <option value="3">No Aplica</option>
+                </select> 
+            </div> 
+            <div class="col-md-4">
+                <label>Tipo De Atención </label>
+                 <select class="form-select" name="PF_SUBSECUENTE">
+                    <option value="1">Primera vez</option>
+                    <option value="2">Subsecuente</option>
+                    <option value="3">Otro</option>
+                </select> 
+            </div> 
+            <div class="col-md-4">
+                <label>Metodo</label>
+                 <select class="form-select" name="PF_METODO">
+                    <option value="1">Hormonal Oral.</option>
+                    <option value="2">Hormonal Inyectable</option>
+                    <option value="3">Parche anticonceptivo</option>
+                    <option value="4">Diu</option>
+                    <option value="5">Condón.  </option>
+                    <option value="6">Implante subdérmico hormonal </option>
+                    <option value="7">No Aplica</option>
+                </select> 
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Salud Reproductiva</legend>
+            <legend class="w-auto px-1">Atención materno infantil-Vigilancia de las embarazadas</legend>
+            <div class="col-md-4">
+                <label>Grupos De Edad En Años</label>
+                 <select class="form-select" name=" VI_EMB_grupo_edad">
+                     <option value="1">Menor a 15</option>
+                    <option value="2">15 a 19 años</option>
+                    <option value="3">20 a 34 años</option>
+                    <option value="4">35 años y más</option>
+                    <option value="5">No Aplica</option>
+                </select> 
+            </div> 
+            <div class="col-md-4">
+                <label>Trimestre Gestacional </label>
+                 <select class="form-select" name="VI_EMB_TRIMESTRE_GESTACIONAL">
+                    <option value="1">Primer Trimestre</option>
+                    <option value="2">Segundo Trimistre</option>
+                    <option value="3">Tercer Trimestre</option>
+                    <option value="4">No Aplica</option>
+                </select> 
+            </div> 
+            <div class="col-md-4">
+                <label>Acciones Irreductibles</label>
+                 <select class="form-select" name="VI_EMB_ACCIONES_IRREDUCTIBLES">
+                    <option value="1">Valoración de riesgo obstetricio.</option>
+                    <option value="2">Identificación De signos de alarma.</option>
+                    <option value="3">Prescripción De ácido folico/ fum. Ferroso.</option>
+                    <option value="4">Uroanalisis</option>
+                    <option value="5">Orientación Signos de alarma.  </option>
+                    <option value="6">No Aplica</option>
+                </select> 
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2"></legend>
+             <div class="col-md-4">
+                <label>Detección</label>
+                 <select class="form-select" name="DETECCION_TAMIZ">
+                    <option value="1">Tamiz metabólico </option>
+                    <option value="2">Tamiz auditivo</option>
+                    <option value="3">Otro</option>
+                </select> 
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Valoración Del Estado Nutricional</legend>
+             <div class="col-md-6">
+                <label>Diagnóstico Nutricional</label>
+                <select class="form-select" name="diagnostico_nutricional">
+                    <option value="1">Desnutricion leve</option>
+                    <option value="2"> Desnutrion moderada</option>
+                    <option value="3">Desnutricion severa</option>
+                    <option value="4">Normal</option>
+                    <option value="5">Sobrepeso</option>
+                    <option value="6">Obesidad</option>
+                    <option value="7">Obesidad Morbida</option>
+                </select>
+               
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Salud Ginecológica</legend>
+             <div class="col-md-4">
+                <label>Detección</label>
+                 <select class="form-select" name="SALUD_GINECO_DETECCION">
+                    <option value="1">Citología Cervical</option>
+                    <option value="2">Exploración De Mama</option>
+                    <option value="3">No aplica</option>
+                </select> 
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Enfermedad Diarreica Aguda menor de 5 Años</legend>
+            <div class="col-md-4">
+                <label>Madres Capacitadas En Manejo</label>
+                 <select class="form-select" name="EDA_SOBRES_DE_HIDRATACION_ORAL_ENTREGADOS">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                </select> 
+            </div>
+             <div class="col-md-4">
+                <label>Madres Capacitadas En Manejo</label>
+                 <select class="form-select" name="EDA_MADRES_CAPACITADAS_MANEJO">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                </select> 
+            </div>
+        </fieldset>
+         <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Infección Respiratoria Aguda menor de 5 Años</legend>
+             <div class="col-md-4">
+                <label>Madres Capacitadas En Manejo</label>
+                 <select class="form-select" name="IRA_MADRES_CAPACITADAS_MANEJO">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                </select> 
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Acciones integrales</legend>
+            <div class="row g-3">
+             <div class="col-md-6">
+                <label>Grupo con/sin Factor de Riesgo</label>
+                 <select class="form-select" name="grupo_riesgo">
+                    <option value="1">20 a 44 años</option>
+                    <option value="2">45 a 59 años</option>
+                    <option value="3">60 años y mas</option>
+                    <option value="4">Adolecentes con obesidad</option>
+                </select> 
+            </div>
+            <div class="col-md-4">
+                <label>Detección Enfermedades Crónicas</label><select class="form-select" name="DETECCION_ENFERMEDADES_CRONICAS">
+                    <option value="1">Primera vez</option>
+                    <option value="2">Subsecuente</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Diabetes</label><select class="form-select" name="diabetes">
+                    <option value="1">Normal</option>
+                    <option value="2">Anormal</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Dislipidemia</label><select class="form-select" name="DISLIPIDEMIA">
+                    <option value="1">Normal</option>
+                    <option value="2">Anormal</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Hipertensión</label><select class="form-select" name="hipertension">
+                    <option value="1">Normar</option>
+                    <option value="2">Anormal</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Revisión Integral De La Piel De Miembros Inferiores</label>
+                 <select class="form-select" name="REVISION_INTEGRAL_PIEL_MIEMBROS_INFERIORES">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label>Diabeticos Informados sobre Cuidados de Los pies </label>
+                 <select class="form-select" name="DIABETICOS_INFORMADOS_CUIDADOS_PIES">
+                    <option value="1">Si</option>
+                    <option value="2">No</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label>Vacunación</label>
+                <select class="form-select" name="vacunacion">
+                    <option value="1">Tipo de Vacuna</option>
+                    <option value="2">Dosis</option>
+                    <option value="3">No Aplica</option>
+                </select>
+               
+            </div>
+            <div class="col-md-6">
+                <label>Promocion de la Salud</label>
+                 <select class="form-select" name="PROMOCION_SALUD">
+                    <option value="1">Atresia de vías Biliares </option>
+                    <option value="2">Lactancia Materna</option>
+                    <option value="3">Otros</option>
+                </select>
+            </div>
+            </div>
+        </fieldset>
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2"></legend>
+             <div class="col-md-6">
+                <label>Derivación</label>
+                 <select class="form-select" name="DERIVACION">
+                    <option value="1">DIT</option>
+                    <option value="2">SAIS</option>
+                    <option value="3">CAI</option>
+                    <option value="4">SAISME</option>
+                    <option value="5">CASA</option>
+                    <option value="6">OTRO</option>
+                 </select>
+            </div>
+            <div class="col-md-4">
+                <label>Actividades Asitenciales</label>
+                 <select class="form-select" name="ACTIVIDADES_ASISTENCIALES">
+                    <option value="1">Inyecciones</option>
+                    <option value="2">Curaciones</option>
+                    <option value="3">Venoclisis</option>
+                    <option value="4">Colocacion de Sondas</option>
+                    <option value="5">Otras</option>
+                 </select>
+            </div>
+            <div class="col-md-12">
+                <label>Observaciones</label><textarea class="form-control" name="OBSERVACIONES_GENERALES"></textarea>
+            </div>
+        </fieldset>
+        <div class="col-12">
+            <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+    </form>
+
+    <form method="GET" action="/exportar" class="mt-3">
+        <button class="btn btn-success" type="submit">Exportar a Excel</button>
+    </form>
+
+    <h2 class="mt-5">Registros Capturados</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th><th>Paciente</th><th>Edad</th><th>Sexo</th><th>Diabetes</th><th>Hipertensión</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in registros %}
+        <tr>
+            <td>{{ row[0] }}</td><td>{{ row[10] }}</td><td>{{ row[11] }}</td><td>{{ row[12] }}</td><td>{{ row[19] }}</td><td>{{ row[20] }}</td>
+            <td>
+                <form method="POST" action="/eliminar/{{ row[0] }}" style="display:inline">
+                    <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

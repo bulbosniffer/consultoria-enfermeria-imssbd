@@ -1,0 +1,366 @@
+from flask import Flask, render_template_string, request, redirect, send_file, url_for, flash
+import sqlite3
+import pandas as pd
+import io
+
+app = Flask(__name__)
+app.secret_key = 'clave_secreta_para_validacion'
+
+# Crear la base de datos si no existe
+conn = sqlite3.connect('salud_adulto.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS registro_adultos_mayores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    unidad_salud TEXT,
+    entidad_federativa TEXT,
+    clues TEXT,
+    localidad TEXT,
+    servicio TEXT,
+    personal_enfermeria TEXT,
+    fecha TEXT,
+    hora_inicio TEXT,
+    hora_termino TEXT,
+    paciente TEXT,
+    edad INTEGER,
+    sexo TEXT,
+    indigena TEXT,
+    migrante TEXT,
+    grupo_edad TEXT,
+    nivel_atencion TEXT,
+    consulta_enfermeria TEXT,
+    plan_cuidados TEXT,
+    diabetes TEXT,
+    hipertension TEXT,
+    vacunacion TEXT,
+    observaciones TEXT,
+    nombre_jefe_fam TEXT,
+    fecha_nacimiento TEXT,
+    domicilio TEXT,
+    consultoria_otorgada TEXT,
+    prescripcion_medicamentos TEXT,
+    diagnostico_nutricional TEXT,
+    grupo_riesgo TEXT
+)''')
+conn.commit()
+conn.close()
+
+# Plantilla HTML modernizada con Bootstrap y campos agrupados
+form_template = '''
+<!doctype html>
+<html>
+<head>
+    <title>Captura Salud del Adulto</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body class="container mt-4">
+  <!-- Mensajes flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+    <h2 class="mb-4">Hoja de Consultoria de Enfermeria</h2>
+    <form method="POST" class="row g-3">
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Datos de la Unidad</legend>
+            <div class="col-md-6">
+                <label>Unidad de Salud</label><input class="form-control"  style="display: none;" name="unidad_salud" value="CESSA BELISARIO DOMINGUEZ">
+            </div>
+            <div class="col-md-6">
+                <label>Entidad Federativa</label><input class="form-control"  style="display: none;" name="entidad_federativa" value="CHIAPAS">
+            </div>
+            <div class="col-md-4">
+                <label>CLUES</label><input class="form-control"   style="display: none;" name="clues" value="CSIMB005343">
+            </div>
+            <div class="col-md-4">
+                <label>Localidad</label><input class="form-control"  style="display: none;" name="localidad" value="BELISARIO DOMINGUEZ">
+            </div>
+            <div class="col-md-4">
+                <label>Servicio</label><select class="form-select" name="servicio">
+                    <option >Consulta Externa</option>
+                    <option >Urgencia</option></select>
+                
+            </div>
+        </fieldset>
+
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Datos del Paciente</legend>
+            <div class="col-md-6">
+                <label>Nombre del Paciente</label><input class="form-control" name="paciente">
+            </div>
+            <div class="col-md-6">
+                <label>Nombre del Jefe de Familia</label><input class="form-control" name="nombre_jefe_fam">
+            </div>
+            <div class="col-md-4">
+                <label>Fecha de Nacimiento</label><input class="form-control" type="date" name="fecha_nacimiento">
+            </div>
+            <div class="col-md-8">
+                <label>Domicilio</label><input class="form-control" name="domicilio">
+            </div>
+            <div class="col-md-3">
+                <label>Edad</label><input class="form-control" type="number" name="edad">
+            </div>
+            <div class="col-md-3">
+                <label>Sexo</label>
+                <select class="form-select" name="sexo">
+                    <option value="F">Femenino</option><option value="M">Masculino</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>¿Indígena?</label><select class="form-select" name="indigena"><option  value="1">Sí</option><option value="2">No</option></select>
+            </div>
+            <div class="col-md-3">
+                <label>¿Migrante?</label><select class="form-select" name="migrante"><option value="1">Sí</option><option value="2">No</option></select>
+            </div>
+            <div class="col-md-6">
+                <label>Grupo de Edad</label><select class="form-select" name="grupo_edad">
+                    <option value="1">0 - 9 años</option>
+                    <option value="2">10 a 19 años</option>
+                    <option value="3">20 a 59 años</option>
+                    <option value="4">20 a 59 años</option></select>
+            </div>
+           
+        </fieldset>
+
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Atención y Diagnóstico</legend>
+            <div class="col-md-4">
+                <label>Fecha</label><input class="form-control" type="date" name="fecha">
+            </div>
+            <div class="col-md-4">
+                <label>Hora Inicio</label><input class="form-control" type="time" name="hora_inicio">
+            </div>
+            <div class="col-md-4">
+                <label>Hora Término</label><input class="form-control" type="time" name="hora_termino">
+            </div>
+            <div class="col-md-6">
+                <label>Personal de Enfermería</label><input class="form-control" name="personal_enfermeria">
+            </div>
+            <div class="col-md-6">
+                <label>Nivel de Atención</label><select class="form-select" name="nivel_atencion">
+                    <option value="1">Primer nivel de Atencion</option>
+                    <option value="2">Segundo nivel de Atencion</option>
+                    <option value="3">Tercer nivel de Atencion</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label>Consulta de Enfermería Otorgada</label>
+                <select class="form-select" name="consulta_enfermeria">
+                    <option value="1">Primera vez</option>
+                    <option value="2">Subsecuente</option>
+                    </select>            
+            </div>
+            <div class="col-md-6">
+                <label>Plan de Cuidados Domiciliarios</label>
+                <select class="form-select" name="plan_cuidados">
+                    <option value="1">Se Realiza</option>
+                    <option value="2">Caso Contrario</option>
+                </select>
+               
+            </div>
+            <div class="col-md-6">
+                <label>Consultoría Otorgada</label>
+                <select class="form-select" name="consultoria_otorgada">
+                    <option value="1">Dentro de la Unidad</option>
+                    <option value="2">Fuera de la Unidad</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label>Prescripción de Medicamentos</label>
+                <select class="form-select" name="prescripcion_medicamentos">
+                    <option value="1">Se otorgó medicamento</option>
+                    <option value="2">Caso Contrario</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label>Diagnóstico Nutricional</label>
+                <select class="form-select" name="diagnostico_nutricional">
+                    <option value="1">Desnutricion leve</option>
+                    <option value="2"> Desnutrion moderada</option>
+                    <option value="3">Desnutricion severa</option>
+                    <option value="4">Normal</option>
+                    <option value="5">Sobrepeso</option>
+                    <option value="6">Obesidad</option>
+                    <option value="7">Obesidad Morbida</option>
+                </select>
+               
+            </div>
+            <div class="col-md-6">
+                <label>Grupo con/sin Factor de Riesgo</label>
+                 <select class="form-select" name="grupo_riesgo">
+                    <option value="1">20 a 44 años</option>
+                    <option value="2">45 a 59 años</option>
+                    <option value="3">60 años y mas</option>
+                    <option value="4">Adolecentes con obesidad</option>
+                </select>
+               
+            </div>
+        </fieldset>
+
+        <fieldset class="border p-3 mb-3">
+            <legend class="w-auto px-2">Detección y Promoción</legend>
+            <div class="col-md-4">
+                <label>Diabetes</label><select class="form-select" name="diabetes"><option value="1">Sí</option><option value="2">No</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Hipertensión</label><select class="form-select" name="hipertension"><option value="1">Sí</option><option value="2">No</option></select>
+            </div>
+            <div class="col-md-4">
+                <label>Vacunación</label>
+                <select class="form-select" name="vacunacion">
+                    <option value="1">Tipo de Vacuna</option>
+                    <option value="2">Dosis</option>
+                    <option value="3">No Aplica</option>
+                </select>
+               
+            </div>
+            <div class="col-md-12">
+                <label>Observaciones</label><textarea class="form-control" name="observaciones"></textarea>
+            </div>
+        </fieldset>
+
+        <div class="col-12">
+            <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+    </form>
+
+    <form method="GET" action="/exportar" class="mt-3">
+        <button class="btn btn-success" type="submit">Exportar a Excel</button>
+    </form>
+
+    <h2 class="mt-5">Registros Capturados</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th><th>Paciente</th><th>Edad</th><th>Sexo</th><th>Diabetes</th><th>Hipertensión</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in registros %}
+        <tr>
+            <td>{{ row[0] }}</td><td>{{ row[10] }}</td><td>{{ row[11] }}</td><td>{{ row[12] }}</td><td>{{ row[19] }}</td><td>{{ row[20] }}</td>
+            <td>
+                <form method="POST" action="/eliminar/{{ row[0] }}" style="display:inline">
+                    <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
+'''
+
+# Función para validar campos vacíos
+def campos_validos(form):
+    for campo in form:
+        if form[campo] == '':
+            return False, campo
+    return True, None
+
+@app.route('/', methods=['GET', 'POST'])
+def formulario():
+    if request.method == 'POST':
+        validado, campo_faltante = campos_validos(request.form)
+        if not validado:
+            flash(f'Por favor completa el campo: {campo_faltante.replace("_", " ").capitalize()}', 'danger')
+            return redirect('/')
+
+        try:
+            data = (
+                request.form['unidad_salud'],
+                request.form['entidad_federativa'],
+                request.form['clues'],
+                request.form['localidad'],
+                request.form['servicio'],
+                request.form['personal_enfermeria'],
+                request.form['fecha'],
+                request.form['hora_inicio'],
+                request.form['hora_termino'],
+                request.form['paciente'],
+                int(request.form['edad']),
+                request.form['sexo'],
+                request.form['indigena'],
+                request.form['migrante'],
+                request.form['grupo_edad'],
+                request.form['nivel_atencion'],
+                request.form['consulta_enfermeria'],
+                request.form['plan_cuidados'],
+                request.form['diabetes'],
+                request.form['hipertension'],
+                request.form['vacunacion'],
+                request.form['observaciones'],
+                request.form['nombre_jefe_fam'],
+                request.form['fecha_nacimiento'],
+                request.form['domicilio'],
+                request.form['consultoria_otorgada'],
+                request.form['prescripcion_medicamentos'],
+                request.form['diagnostico_nutricional'],
+                request.form['grupo_riesgo']
+            )
+
+            conn = sqlite3.connect('salud_adulto.db')
+            c = conn.cursor()
+            c.execute('''INSERT INTO registro_adultos_mayores (
+                unidad_salud, entidad_federativa, clues, localidad, servicio,
+                personal_enfermeria, fecha, hora_inicio, hora_termino, paciente,
+                edad, sexo, indigena, migrante, grupo_edad,
+                nivel_atencion, consulta_enfermeria, plan_cuidados,
+                diabetes, hipertension, vacunacion, observaciones,
+                nombre_jefe_fam, fecha_nacimiento, domicilio,
+                consultoria_otorgada, prescripcion_medicamentos,
+                diagnostico_nutricional, grupo_riesgo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
+            conn.commit()
+            conn.close()
+            flash('Registro guardado exitosamente.', 'success')
+        except Exception as e:
+            flash(f'Error al guardar: {e}', 'danger')
+        return redirect('/')
+
+    conn = sqlite3.connect('salud_adulto.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM registro_adultos_mayores')
+    registros = c.fetchall()
+    conn.close()
+
+    return render_template_string(form_template, registros=registros)
+
+@app.route('/eliminar/<int:registro_id>', methods=['POST'])
+def eliminar(registro_id):
+    conn = sqlite3.connect('salud_adulto.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM registro_adultos_mayores WHERE id = ?', (registro_id,))
+    conn.commit()
+    conn.close()
+    flash('Registro eliminado.', 'info')
+    return redirect('/')
+
+@app.route('/exportar')
+def exportar():
+    conn = sqlite3.connect('salud_adulto.db')
+    df = pd.read_sql_query('SELECT * FROM registro_adultos_mayores', conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Registros', index=False)
+    output.seek(0)
+
+    return send_file(output, download_name="registros_salud_adulto.xlsx", as_attachment=True)
+
+if __name__ == '__main__':
+     app.run(host="0.0.0.0", port=5000, debug=True)
+    #app.run(debug=True)
