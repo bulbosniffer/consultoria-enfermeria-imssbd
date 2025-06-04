@@ -1,5 +1,26 @@
-__pycache__/
-*.pyc
-instance/
-*.db
+# Entorno virtual
+venv/
 .env
+*.env
+
+# Archivos de base de datos y temporales
+tmp/
+*.db
+*.sqlite3
+
+# Bytecode de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de log y exportaciones
+*.log
+*.xlsx
+
+# Configuración de editores
+.vscode/
+.idea/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
