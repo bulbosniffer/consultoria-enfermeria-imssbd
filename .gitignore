@@ -24,3 +24,7 @@ __pycache__/
 # Archivos del sistema
 .DS_Store
 Thumbs.db
+
+# Excepciones para incluir la base de datos salud_adulto
+!tmp/
+!tmp/salud_adulto.db
